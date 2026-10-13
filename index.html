@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="es-CO">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0E2A5C">
+  <meta name="description" content="Revisión documental de duplicidad de atención SDIS–ICBF. Secretaría Distrital de Integración Social.">
+  <title>Revisión de Duplicidad · SDIS</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- ====================================================== ENCABEZADO -->
+  <header class="barra-superior">
+    <div class="barra-superior__fila">
+      <div class="escudo" aria-hidden="true">SDIS</div>
+      <div class="barra-superior__textos">
+        <div class="barra-superior__titulo" id="tituloApp">Revisión de Duplicidad</div>
+        <div class="barra-superior__sub" id="subtituloApp">Concurrencia SDIS · ICBF</div>
+      </div>
+      <div class="sesion oculto" id="sesion">
+        <span class="sesion__info" id="sesionInfo"></span>
+        <button type="button" class="sesion__salir" id="btnSalir">Salir</button>
+      </div>
+    </div>
+    <div class="cinta-amarilla" aria-hidden="true"></div>
+  </header>
+
+  <!-- ================================================= BARRA DE TRABAJO -->
+  <div class="barra-trabajo oculto" id="barraTrabajo">
+    <div class="barra-trabajo__fila">
+      <button type="button" class="boton boton--claro" id="btnAtras">◀ ATRÁS</button>
+      <button type="button" class="boton boton--enviar" id="btnEnviar">ENVIAR INFORMACIÓN</button>
+    </div>
+  </div>
+
+  <main class="contenido">
+
+    <!-- ================================================================
+         PANTALLA 0 · INGRESO (LOGIN)
+         ============================================================== -->
+    <section id="pantallaLogin" class="oculto">
+      <div id="zonaLogin"></div>
+      <div class="tarjeta tarjeta--login">
+        <div class="login__marca" aria-hidden="true">SDIS</div>
+        <h2 class="tarjeta__titulo" style="text-align:center">Ingreso al aplicativo</h2>
+        <p class="tarjeta__intro" style="text-align:center">
+          Revisión de duplicidad de atención SDIS – ICBF
+        </p>
+        <form id="formLogin" autocomplete="off" onsubmit="return false;">
+          <div class="campo">
+            <label class="campo__etiqueta" for="inpUsuario">Usuario</label>
+            <input class="control" id="inpUsuario" type="text" autocapitalize="none"
+                   spellcheck="false" placeholder="usuario" autocomplete="username">
+          </div>
+          <div class="campo">
+            <label class="campo__etiqueta" for="inpClave">Contraseña</label>
+            <input class="control" id="inpClave" type="password"
+                   placeholder="contraseña" autocomplete="current-password">
+          </div>
+          <button type="submit" class="boton boton--principal" id="btnIngresar">INGRESAR</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ================================================================
+         PANTALLA 0b · CAMBIO DE CONTRASEÑA (primer ingreso)
+         ============================================================== -->
+    <section id="pantallaCambio" class="oculto">
+      <div id="zonaCambio"></div>
+      <div class="tarjeta tarjeta--login">
+        <h2 class="tarjeta__titulo" style="text-align:center">Cambie su contraseña</h2>
+        <p class="tarjeta__intro" style="text-align:center">
+          Por seguridad, en el primer ingreso debe definir una contraseña nueva.
+        </p>
+        <form id="formCambio" autocomplete="off" onsubmit="return false;">
+          <div class="campo">
+            <label class="campo__etiqueta" for="inpNueva">Nueva contraseña</label>
+            <input class="control" id="inpNueva" type="password"
+                   placeholder="nueva contraseña" autocomplete="new-password">
+            <div class="campo__ayuda" id="ayudaNueva">Mínimo 8 caracteres.</div>
+          </div>
+          <div class="campo">
+            <label class="campo__etiqueta" for="inpNueva2">Confirmar contraseña</label>
+            <input class="control" id="inpNueva2" type="password"
+                   placeholder="repita la contraseña" autocomplete="new-password">
+          </div>
+          <button type="submit" class="boton boton--principal" id="btnGuardarClave" disabled>
+            GUARDAR Y CONTINUAR
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ================================================================
+         PANTALLA 1 · BÚSQUEDA
+         ============================================================== -->
+    <section id="pantallaBusqueda" class="oculto">
+
+      <div id="zonaMensajes"></div>
+
+      <div class="tarjeta oculto" id="tarjetaBorradores">
+        <h2 class="tarjeta__titulo">Tiene revisiones sin enviar</h2>
+        <p class="tarjeta__intro">
+          Quedaron pre-guardadas en este dispositivo. La información no llega al
+          servidor hasta que presione ENVIAR.
+        </p>
+        <div class="borradores" id="borradores"></div>
+      </div>
+
+      <div class="tarjeta">
+        <h2 class="tarjeta__titulo">Buscar niña o niño</h2>
+        <p class="tarjeta__intro" id="introApp"></p>
+
+        <div class="cargando-caja" id="cargandoIndice">
+          <span class="rueda"></span><span>Cargando la base de datos…</span>
+        </div>
+
+        <form id="formBusqueda" class="oculto" autocomplete="off" onsubmit="return false;">
+          <div class="fila-doble">
+
+            <div class="campo">
+              <label class="campo__etiqueta" for="selCategoria">
+                <span class="campo__paso">1</span>Categoría
+              </label>
+              <select class="control" id="selCategoria"><option value="">Cargando…</option></select>
+            </div>
+
+            <div class="campo">
+              <label class="campo__etiqueta" for="selJardin">
+                <span class="campo__paso">2</span>Unidad operativa (jardín)
+              </label>
+              <select class="control" id="selJardin" disabled>
+                <option value="">Primero seleccione la categoría</option>
+              </select>
+              <div class="campo__ayuda" id="ayudaJardin"></div>
+            </div>
+
+            <div class="campo">
+              <label class="campo__etiqueta" for="selNino">
+                <span class="campo__paso">3</span>Niña o niño
+              </label>
+              <select class="control" id="selNino" disabled>
+                <option value="">Primero seleccione el jardín</option>
+              </select>
+            </div>
+
+          </div>
+
+          <!-- Protección de datos (se llena desde config.js) -->
+          <div class="habeas" id="bloqueHabeas">
+            <div class="habeas__aviso">
+              <span class="habeas__icono" aria-hidden="true">🔒</span>
+              <div>
+                <p class="habeas__texto" id="habeasAvisoCorto"></p>
+                <button type="button" class="habeas__enlace" id="btnVerPolitica"></button>
+              </div>
+            </div>
+            <label class="habeas__check">
+              <input type="checkbox" id="chkHabeas">
+              <span class="habeas__marca" aria-hidden="true"></span>
+              <span class="habeas__declaracion" id="habeasDeclaracion"></span>
+            </label>
+          </div>
+
+          <button type="button" class="boton boton--principal boton--iniciar" id="btnIniciar" disabled>
+            INICIAR DILIGENCIAMIENTO
+          </button>
+
+          <p class="campo__ayuda" id="resumenBase" style="margin-top:14px;text-align:center"></p>
+        </form>
+      </div>
+    </section>
+
+    <!-- ================================================================
+         PANTALLA 2 · DILIGENCIAMIENTO (ficha + módulos)
+         ============================================================== -->
+    <section id="pantallaFormulario" class="oculto">
+      <div id="mensajesFormulario"></div>
+
+      <div class="ficha" id="ficha"></div>
+
+      <div class="progreso">
+        <div class="progreso__texto">
+          <span id="progresoTexto"><strong>0 de 0</strong> módulos con información</span>
+          <span class="aviso-guardado" id="avisoGuardado"></span>
+        </div>
+        <div class="progreso__barra" role="progressbar" aria-label="Avance">
+          <div class="progreso__relleno" id="progresoRelleno"></div>
+        </div>
+      </div>
+
+      <nav class="modnav" id="modnav" aria-label="Módulos"></nav>
+
+      <div id="modulos"></div>
+    </section>
+
+    <!-- ================================================================
+         PANTALLA 3 · RESUMEN / CONFIRMACIÓN
+         ============================================================== -->
+    <section id="pantallaFin" class="oculto">
+      <div class="tarjeta">
+        <div class="mensaje mensaje--ok" style="margin-bottom:16px">
+          <strong id="finTitulo">Información enviada correctamente</strong>
+          La revisión quedó consolidada en el archivo de Google Drive.
+        </div>
+        <div class="resumen">
+          <h3>Resumen de la revisión</h3>
+          <div class="resumen__texto" id="finResumen"></div>
+        </div>
+        <button type="button" class="boton boton--principal" id="btnOtroNino" style="margin-bottom:10px">
+          REVISAR OTRA NIÑA O NIÑO
+        </button>
+        <button type="button" class="boton boton--secundario" id="btnVolverInicio">VOLVER AL INICIO</button>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="pie">
+    Secretaría Distrital de Integración Social · Bogotá D.C.<br>
+    Revisión de duplicidad de atención SDIS – ICBF
+  </footer>
+
+  <!-- ====================================================== MODAL -->
+  <div class="capa oculto" id="capaModal" role="dialog" aria-modal="true" aria-labelledby="modalTitulo">
+    <div class="modal">
+      <h3 class="modal__titulo" id="modalTitulo"></h3>
+      <p class="modal__texto" id="modalTexto"></p>
+      <div class="modal__acciones" id="modalAcciones"></div>
+    </div>
+  </div>
+
+  <!-- ============================== VENTANA DE LA POLÍTICA COMPLETA -->
+  <div class="capa oculto" id="capaPolitica" role="dialog" aria-modal="true" aria-labelledby="politicaTitulo">
+    <div class="modal modal--politica">
+      <div class="modal__cabeza">
+        <h3 class="modal__titulo" id="politicaTitulo"></h3>
+        <button type="button" class="modal__cerrar" id="btnCerrarPolitica" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="politica" id="politicaCuerpo"></div>
+      <div class="modal__acciones">
+        <a class="boton boton--secundario" id="politicaEnlaceOficial" target="_blank" rel="noopener">
+          Ver política oficial completa
+        </a>
+        <button type="button" class="boton boton--principal" id="btnAceptarPolitica">Entendido</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="modulos.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
