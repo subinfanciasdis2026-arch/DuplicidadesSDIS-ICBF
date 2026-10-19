@@ -1,4 +1,4 @@
-[README.md](https://github.com/user-attachments/files/33665426/README.md)
+[README.md](https://github.com/user-attachments/files/33665963/README.md)
 # Revisión de Duplicidad de Atención SDIS – ICBF (con login)
 
 Aplicativo móvil para revisar los documentos de las niñas y los niños en posible
