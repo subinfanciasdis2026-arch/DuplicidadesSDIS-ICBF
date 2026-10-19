@@ -14,13 +14,17 @@ var CONFIG = {
   URL_APPS_SCRIPT: 'https://script.google.com/macros/s/AKfycbyhO86ElyyED2uCIOz5oj8hwo0Lt_Ni-xNUQpSEmZUwN3hde4SqLcUFyR0f-0e7FZ4F4g/exec',
 
   // 2) Encabezado
-  TITULO: 'Revisión de Duplicidad',
-  SUBTITULO: 'Concurrencia SDIS · ICBF',
+  TITULO: 'Digitación de Documentos',
+  SUBTITULO: 'Atención en SDIS · SDIS – ICBF',
 
   // 3) Intro de la pantalla de inicio
-  INTRO: 'Este formulario permite cargar y revisar los documentos de las niñas y ' +
-         'los niños que posiblemente están en duplicidad de atención entre la SDIS ' +
-         'y el ICBF.',
+  INTRO: 'Este formulario permite cargar y revisar (digitación de documentos) los ' +
+         'soportes de las niñas y los niños atendidos en la SDIS, en el marco de la ' +
+         'atención SDIS – ICBF.',
+
+  // 3b) Calendarios: años permitidos en todos los campos de fecha
+  FECHA_MIN: '2024-01-01',
+  FECHA_MAX: '2025-12-31',
 
   // 4) Ruta del índice de datos
   RUTA_INDICE: 'data/index.json',
@@ -151,10 +155,10 @@ var CONFIG = {
       {
         titulo: '2. Finalidad del tratamiento',
         parrafos: [
-          'Los datos se recolectan con el fin de revisar la documentación de las niñas ' +
-          'y los niños que posiblemente se encuentran en duplicidad de atención entre la ' +
-          'SDIS y el ICBF, verificar los soportes del servicio y adelantar las ' +
-          'actuaciones administrativas a que haya lugar.'
+          'Los datos se recolectan con el fin de revisar y digitar la documentación de ' +
+          'las niñas y los niños atendidos en la SDIS, en el marco de la atención SDIS – ' +
+          'ICBF, verificar los soportes del servicio y adelantar las actuaciones ' +
+          'administrativas a que haya lugar.'
         ]
       },
       {
@@ -162,7 +166,7 @@ var CONFIG = {
         parrafos: [
           'Se tratan datos de identificación de la niña o el niño (nombre y número de ' +
           'documento), la unidad operativa, el asociado, las localidades de atención, las ' +
-          'fechas de servicio y de duplicidad, y la información de los documentos del ' +
+          'fechas de servicio y de atención en SDIS, y la información de los documentos del ' +
           'expediente. Se registra además el nombre de la persona de la SDIS que diligencia.'
         ]
       },
