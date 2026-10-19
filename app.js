@@ -63,6 +63,12 @@
   }
   function isoAhora_() { try { return new Date().toISOString(); } catch (e) { return hoyTexto(); } }
 
+  // Limita todo calendario a los años permitidos (2024 y 2025 por defecto).
+  function limitarFecha(input) {
+    input.min = (CONFIG.FECHA_MIN || '2024-01-01');
+    input.max = (CONFIG.FECHA_MAX || '2025-12-31');
+  }
+
   function opcionesDe(campo) {
     if (campo.opciones) return campo.opciones;
     if (campo.opcionesDe && CONFIG[campo.opcionesDe]) return CONFIG[campo.opcionesDe];
@@ -280,6 +286,9 @@
   function hacerSalir() {
     estado.auth = { token: '', usuario: '', nombre: '', rol: '' };
     estado.indice = null; estado.cacheCat = {}; estado.caso = null; estado.respuestas = {};
+    // Reiniciar aceptación de protección de datos: el próximo ingreso la pide de nuevo.
+    estado.seleccion.aceptoHabeasData = false; estado.seleccion.fechaAceptacionHD = '';
+    if ($('chkHabeas')) { $('chkHabeas').checked = false; }
     try { sessionStorage.removeItem(CLAVE_SESION); } catch (e) {}
     $('sesion').classList.add('oculto');
     $('inpUsuario').value = ''; $('inpClave').value = '';
@@ -429,21 +438,46 @@
     var s = estado.seleccion;
     $('btnIniciar').disabled = true;
     $('btnIniciar').innerHTML = '<span class="rueda rueda--blanca"></span> Cargando…';
+    var caso;
     cargarCategoria(s.slug)
       .then(function (d) {
-        var caso = d.casos[s.casoId];
+        caso = d.casos[s.casoId];
         if (!caso) throw new Error('No se encontró el caso seleccionado.');
         estado.caso = caso;
         s.nombre = caso.nombre; s.doc = caso.doc; s.periodo = caso.periodo;
-        estado.respuestas = leerBorrador() || {};
+        // Trae lo que ya estaba registrado para este niño (del servidor), para continuar.
+        return cargarRespuestasServidor(s.casoId);
+      })
+      .then(function (servidor) {
+        var local = leerBorradorSilencioso();
+        // Se prefiere el pre-guardado local si existe (puede tener cambios sin enviar);
+        // si no, se usa lo que ya está registrado en el servidor.
+        if (local && Object.keys(local).length) {
+          estado.respuestas = local;
+          mensaje('mensajesFormulario', 'info', 'Se recuperó su avance', 'Encontramos un pre-guardado en este dispositivo. Puede continuar donde quedó.');
+        } else if (servidor && Object.keys(servidor).length) {
+          estado.respuestas = servidor;
+          mensaje('mensajesFormulario', 'info', 'Se cargó lo ya registrado', 'Se trajo la información que ya estaba guardada para esta niña o niño. Puede revisarla, ajustarla y volver a enviar.');
+        } else {
+          estado.respuestas = {};
+        }
         pintarFicha();
         pintarModulos();
         actualizarProgreso();
-        limpiarZona('mensajesFormulario');
         mostrarPantalla('pantallaFormulario');
       })
       .catch(function (err) { if (err.message !== 'SESION' && err.message !== 'DEBE_CAMBIAR') mensaje('zonaMensajes', 'error', 'No se pudo abrir el caso', err.message); })
       .then(function () { $('btnIniciar').textContent = 'INICIAR DILIGENCIAMIENTO'; validarBusqueda(); });
+  }
+
+  // Trae del servidor la última información registrada para este caso (si existe).
+  function cargarRespuestasServidor(casoId) {
+    return apiDatos('cargar', { casoId: casoId })
+      .then(function (d) { return (d && d.respuestas) ? d.respuestas : {}; })
+      .catch(function (err) {
+        if (err.message === 'SESION' || err.message === 'DEBE_CAMBIAR') throw err;
+        return {};   // si falla la consulta, se continúa sin precarga del servidor
+      });
   }
 
   /* ====================================================== FICHA */
@@ -471,7 +505,7 @@
     cont.appendChild(grid);
 
     var dup = crear('div', 'ficha__dup');
-    var dt = crear('div', 'ficha__dup-tit'); dt.textContent = 'Periodo(s) de duplicidad'; dup.appendChild(dt);
+    var dt = crear('div', 'ficha__dup-tit'); dt.textContent = 'Periodo(s) de atención en SDIS'; dup.appendChild(dt);
     (c.duplicidades || []).forEach(function (d) {
       var it = crear('div', 'ficha__dup-item');
       it.textContent = '· ' + (d.inicio || '?') + '  →  ' + (d.fin || '?') + (d.dias ? '   (' + d.dias + ' días)' : '');
@@ -555,7 +589,26 @@
     var cuerpo = $('mod-' + mod.id).querySelector('[data-cuerpo]');
     limpiar(cuerpo);
 
-    (mod.campos || []).forEach(function (campo) { cuerpo.appendChild(renderCampo(mod, 'base', campo)); });
+    // Gate: si el módulo tiene "¿Cuenta con el documento?" y la respuesta NO es "SI",
+    // no se despliegan las demás preguntas.
+    var gateCerrado = false;
+    if (mod.gate) {
+      gateCerrado = (getBase(mod.id, mod.gate) !== 'SI');
+    }
+
+    (mod.campos || []).forEach(function (campo) {
+      if (gateCerrado && campo.id !== mod.gate) return;   // solo se muestra la pregunta del gate
+      cuerpo.appendChild(renderCampo(mod, 'base', campo));
+    });
+
+    if (gateCerrado) {
+      var nota = crear('div', 'preg__ayuda');
+      nota.textContent = getBase(mod.id, mod.gate) === 'NO'
+        ? 'Respondió NO: no se requieren más preguntas para este documento.'
+        : 'Responda la pregunta anterior para continuar.';
+      cuerpo.appendChild(nota);
+      return;
+    }
 
     // Rama (bifurcación según un campo)
     if (mod.rama) {
@@ -637,6 +690,7 @@
       control.addEventListener('input', function () { escribirValor(mod, scope, campo, repId, repIndex, control.value); onCambio(false); });
     } else if (campo.tipo === 'fecha') {
       control = crear('input', 'control'); control.type = 'date'; control.value = txt(valor);
+      limitarFecha(control);
       control.addEventListener('change', function () { escribirValor(mod, scope, campo, repId, repIndex, control.value); onCambio(false); });
     } else { // sino, sinona, select
       control = crear('select', 'control');
@@ -645,7 +699,8 @@
       control.value = txt(valor);
       control.addEventListener('change', function () {
         escribirValor(mod, scope, campo, repId, repIndex, control.value);
-        var estructural = !!(mod.rama && scope === 'base' && campo.id === mod.rama.campo);
+        var estructural = !!((mod.gate && scope === 'base' && campo.id === mod.gate) ||
+                             (mod.rama && scope === 'base' && campo.id === mod.rama.campo));
         onCambio(estructural, mod);
       });
     }
@@ -687,7 +742,7 @@
     // Ayuda: qué meses quedan habilitados según la duplicidad
     var habilitados = meses.filter(function (m) { return habil[m]; });
     var ayuda = crear('div', 'preg__ayuda');
-    ayuda.textContent = 'Solo se habilitan los meses del periodo de duplicidad: ' + habilitados.join(', ') + '.';
+    ayuda.textContent = 'Solo se habilitan los meses del periodo de atención en SDIS: ' + habilitados.join(', ') + '.';
     cont.appendChild(ayuda);
 
     var box = crear('div', 'asistencia');
@@ -703,7 +758,7 @@
       if (!activo) { valor[m] = ''; }   // los meses fuera de la duplicidad no guardan valor
       var td = crear('td', activo ? '' : 'mes-off');
       var inp = crear('input'); inp.type = 'text'; inp.inputMode = 'numeric'; inp.value = txt(valor[m]);
-      if (!activo) { inp.disabled = true; inp.title = 'Mes fuera del periodo de duplicidad'; }
+      if (!activo) { inp.disabled = true; inp.title = 'Mes fuera del periodo de atención en SDIS'; }
       else {
         inp.addEventListener('input', function () {
           var v = inp.value.replace(/[^0-9]/g, ''); if (v !== inp.value) inp.value = v;
@@ -795,7 +850,7 @@
     fechas.forEach(function (f, i) {
       var p = crear('div', 'preg');
       var l = crear('label', 'preg__label'); l.textContent = cfg[1] + ' ' + (i + 1); p.appendChild(l);
-      var d = crear('input', 'control'); d.type = 'date'; d.value = txt(f);
+      var d = crear('input', 'control'); d.type = 'date'; d.value = txt(f); limitarFecha(d);
       d.addEventListener('change', function () {
         var arr = getBase(mod.id, claveFechas); arr = Array.isArray(arr) ? arr : [];
         arr[i] = d.value; setBase(mod.id, claveFechas, arr); onCambio(false);
@@ -808,7 +863,7 @@
   function campoFechaSimple(mod, clave, label) {
     var p = crear('div', 'preg');
     var l = crear('label', 'preg__label'); l.textContent = label; p.appendChild(l);
-    var d = crear('input', 'control'); d.type = 'date'; d.value = txt(getBase(mod.id, clave));
+    var d = crear('input', 'control'); d.type = 'date'; d.value = txt(getBase(mod.id, clave)); limitarFecha(d);
     d.addEventListener('change', function () { setBase(mod.id, clave, d.value); onCambio(false); });
     p.appendChild(d); return p;
   }
@@ -868,6 +923,15 @@
         mensaje('mensajesFormulario', 'info', 'Se recuperó su avance', 'Encontramos un pre-guardado del ' + p.actualizado + '. Puede continuar donde quedó.');
         return p.respuestas;
       }
+    } catch (e) {}
+    return null;
+  }
+  // Igual que leerBorrador pero sin mostrar mensaje (el llamador decide qué avisar).
+  function leerBorradorSilencioso() {
+    try {
+      var crudo = localStorage.getItem(claveBorrador()); if (!crudo) return null;
+      var p = JSON.parse(crudo);
+      if (p && p.respuestas) return p.respuestas;
     } catch (e) {}
     return null;
   }
@@ -946,7 +1010,7 @@
     L.push('Asociado: ' + c.asociado + '  ·  Localidad ICBF: ' + c.locICBF + '  ·  Localidad SDIS: ' + c.locSDIS);
     L.push('Atención SDIS: ' + (c.iniSDIS || '?') + ' a ' + (c.finSDIS || '?'));
     var dups = (c.duplicidades || []).map(function (d) { return (d.inicio || '?') + ' a ' + (d.fin || '?'); });
-    L.push('Duplicidad(es): ' + (dups.join('  |  ') || '—'));
+    L.push('Periodo(s) de atención en SDIS: ' + (dups.join('  |  ') || '—'));
     L.push('Diligenciado por: ' + estado.auth.nombre + ' (' + estado.auth.usuario + ' · ' + estado.auth.rol + ')');
     L.push('');
     L.push('DOCUMENTOS REVISADOS:');
