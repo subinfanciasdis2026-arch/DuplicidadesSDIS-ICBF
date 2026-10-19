@@ -11,7 +11,7 @@
 var CONFIG = {
 
   // 1) URL de la aplicacion web de Google Apps Script (termina en /exec)
-  URL_APPS_SCRIPT: 'https://script.google.com/macros/s/AKfycbyhO86ElyyED2uCIOz5oj8hwo0Lt_Ni-xNUQpSEmZUwN3hde4SqLcUFyR0f-0e7FZ4F4g/exec',
+  URL_APPS_SCRIPT: 'https://script.google.com/macros/s/AKfycbyz9f9UMBMlVbhTfl-qR2v4ymRaRhqkYlCjHek2A-uqiKDeeWd1WNZVJnqd0RLcG2VQ/exec',
 
   // 2) Encabezado
   TITULO: 'Digitación de Documentos',
