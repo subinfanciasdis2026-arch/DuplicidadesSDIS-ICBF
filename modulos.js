@@ -1,25 +1,18 @@
 /* ============================================================================
-   DEFINICION DE LOS MODULOS DE REVISION  (aplicativo de duplicidad)
+   DEFINICION DE LOS MODULOS DE REVISION  (Atención en SDIS – Digitación de documentos)
    ----------------------------------------------------------------------------
    Esquema declarativo que lee app.js. Cada módulo puede tener:
-     - campos:     preguntas de base (siempre visibles)
-     - rama:       bifurca según la respuesta de un campo (ej. SI/NO)
-     - repetible:  un cuadro que se puede agregar varias veces con un botón
+     - gate:      id del campo "¿Cuenta con el documento?". Si la respuesta NO es
+                  "SI", no se despliegan las demás preguntas del módulo.
+     - campos:    preguntas de base (la del gate va primero).
+     - rama:      bifurca según la respuesta de un campo (ej. SI/NO).
+     - repetible: un cuadro que se puede agregar varias veces con un botón.
 
    Tipos de campo (tipo):
-     texto     -> cuadro de texto de una línea
-     textarea  -> cuadro de texto de varias líneas
-     numero    -> cuadro de texto que SOLO admite números
-     sino      -> lista desplegable SI / NO
-     sinona    -> lista desplegable SI / NO / NO APLICA
-     fecha     -> calendario para marcar la fecha
-     select    -> lista desplegable con opciones fijas
-     multi     -> selección múltiple (varias opciones)
-     mesesMulti-> selección múltiple de los meses según el periodo del niño
-     asistencia-> cuadro de asistencia por mes con total automático
-     egreso    -> soportes de egreso con sus campos dinámicos
+     texto, textarea, numero, sino, sinona, fecha, select, multi, mesesMulti,
+     asistencia, egreso.
 
-   mostrarSi: { campo: 'idOtroCampo', valor: 'SI' }  -> muestra el campo solo si aplica
+   Nota: los calendarios (tipo fecha) solo permiten años 2024 y 2025 (config.js).
    ==========================================================================*/
 
 var MODULOS = [
@@ -28,8 +21,10 @@ var MODULOS = [
   {
     id: 'asistencia',
     titulo: 'Listados de asistencia',
+    gate: 'cuenta',
     campos: [
-      { id: 'asistencia', tipo: 'asistencia', label: 'Asistencia efectiva en periodo de duplicidad' },
+      { id: 'cuenta', tipo: 'sino', label: '¿Cuenta con los listados de asistencia?' },
+      { id: 'asistencia', tipo: 'asistencia', label: 'Asistencia efectiva en el periodo de atención en SDIS' },
       { id: 'nombreFormato', tipo: 'texto', label: 'Nombre del formato que tiene la entidad' },
       { id: 'enlace', tipo: 'texto', label: 'Hipervínculo o enlace del documento' }
     ]
@@ -40,10 +35,11 @@ var MODULOS = [
     id: 'formalizacion',
     titulo: 'Formalización de Cupo',
     codigo: 'FOR-PSS-434',
+    gate: 'cuenta',
     campos: [
+      { id: 'cuenta', tipo: 'sino', label: '¿Cuenta con el formato de formalización de cupo?' },
       { id: 'nombreFormato', tipo: 'texto', label: 'Nombre del formato que tiene la entidad' },
       { id: 'enlace', tipo: 'texto', label: 'Hipervínculo o enlace del documento' },
-      { id: 'cuenta', tipo: 'sino', label: 'Cuenta con el formato de formalización de cupo' },
       { id: 'legible', tipo: 'sino', label: '¿El documento es legible?' },
       { id: 'completitud', tipo: 'sino', label: '¿La digitalización del documento se evidencia en su completitud?' },
       { id: 'fechaFormalizacion', tipo: 'fecha', label: 'Fecha de formalización de cupo' },
@@ -58,10 +54,11 @@ var MODULOS = [
     id: 'sirbe',
     titulo: 'Ficha SIRBE',
     codigo: 'FOR-PSS-334',
+    gate: 'cuenta',
     campos: [
+      { id: 'cuenta', tipo: 'sino', label: '¿Cuenta con la Ficha SIRBE?' },
       { id: 'nombreFormato', tipo: 'texto', label: 'Nombre del formato que tiene la entidad' },
       { id: 'enlace', tipo: 'texto', label: 'Hipervínculo o enlace del documento' },
-      { id: 'cuenta', tipo: 'sino', label: 'Cuenta con Ficha SIRBE' },
       { id: 'fechaEntrega', tipo: 'fecha', label: 'Fecha de entrega para la digitación' },
       { id: 'recolectorNombre', tipo: 'texto', label: 'Nombre del recolector de la ficha SIRBE' },
       { id: 'recolectorDoc', tipo: 'numero', label: 'Número de documento del recolector', ayuda: 'Solo números' },
@@ -78,17 +75,18 @@ var MODULOS = [
     id: 'novedades',
     titulo: 'Novedades',
     codigo: 'FOR-PSS-309',
+    gate: 'cuenta',
     campos: [
+      { id: 'cuenta', tipo: 'sino', label: '¿Cuenta con el formato de novedades?' },
       { id: 'nombreFormato', tipo: 'texto', label: 'Nombre del formato que tiene la entidad' },
       { id: 'enlace', tipo: 'texto', label: 'Hipervínculo o enlace del documento' },
-      { id: 'cuenta', tipo: 'sino', label: 'Cuenta con novedades para el periodo de concurrencia' },
       { id: 'legible', tipo: 'sino', label: '¿El documento es legible?' },
       { id: 'completitud', tipo: 'sino', label: '¿La digitalización del documento se evidencia en su completitud?' }
     ],
     repetible: {
       id: 'registros',
       titulo: 'Registro de novedad',
-      botonTexto: 'Crear nuevo registro de novedad',
+      botonTexto: 'Crear registro de novedad',
       campos: [
         { id: 'fecha', tipo: 'fecha', label: 'Fecha de la novedad (D/M/A)' },
         { id: 'tipo', tipo: 'multi', label: 'Tipo de novedad', opcionesDe: 'TIPOS_NOVEDAD' },
@@ -103,45 +101,48 @@ var MODULOS = [
   {
     id: 'observador',
     titulo: 'Observador',
+    gate: 'cuenta',
     campos: [
+      { id: 'cuenta', tipo: 'sino', label: '¿Cuenta con el observador?' },
       { id: 'nombreFormato', tipo: 'texto', label: 'Nombre del formato que tiene la entidad' },
       { id: 'enlace', tipo: 'texto', label: 'Hipervínculo o enlace del documento' },
-      { id: 'cuenta', tipo: 'sino', label: 'Cuenta con observador para el periodo de concurrencia' },
       { id: 'legible', tipo: 'sino', label: '¿El documento es legible?' },
       { id: 'completitud', tipo: 'sino', label: '¿La digitalización del documento se evidencia en su completitud?' }
     ],
     repetible: {
       id: 'registros',
       titulo: 'Registro de observador',
-      botonTexto: 'Crear nuevo registro de observador',
+      botonTexto: 'Crear registro de observador',
       campos: [
         { id: 'periodo', tipo: 'mesesMulti', label: 'Periodo del observador (meses)' },
         { id: 'periodicidad', tipo: 'select', label: 'Periodicidad de registro', opcionesDe: 'PERIODICIDAD_OBSERVADOR' },
         { id: 'fechaInicio', tipo: 'fecha', label: 'Fecha del formato — Inicio' },
         { id: 'fechaFin', tipo: 'fecha', label: 'Fecha del formato — Fin' },
-        { id: 'firma', tipo: 'sino', label: 'Cuenta con la firma del padre, madre o acudiente' }
+        { id: 'firma', tipo: 'sino', label: 'Cuenta con la firma del padre, madre o acudiente' },
+        { id: 'fechaSocializacion', tipo: 'fecha', label: 'Fecha de socialización de observador' }
       ]
     }
   },
 
-  /* ------------------------------------------------- 6. Informe Trimestral */
+  /* ------------------------------------------------- 6. Informe pedagógico */
   {
     id: 'informe',
-    titulo: 'Informe Trimestral',
+    titulo: 'Informe pedagógico',
+    gate: 'cuenta',
     campos: [
+      { id: 'cuenta', tipo: 'sino', label: '¿Cuenta con el informe pedagógico?' },
       { id: 'nombreFormato', tipo: 'texto', label: 'Nombre del formato que tiene la entidad' },
       { id: 'enlace', tipo: 'texto', label: 'Hipervínculo o enlace del documento' }
     ],
     repetible: {
       id: 'registros',
-      titulo: 'Informe trimestral',
-      botonTexto: 'Crear nuevo registro de paquete trimestral',
+      titulo: 'Informe pedagógico',
+      botonTexto: 'Crear registro de informe pedagógico',
       minimo: 1,
       campos: [
-        { id: 'cuenta', tipo: 'sinona', label: 'Cuenta con informes para el periodo de duplicidad' },
         { id: 'legible', tipo: 'sino', label: '¿El documento es legible?' },
         { id: 'completitud', tipo: 'sino', label: '¿La digitalización del documento se evidencia en su completitud?' },
-        { id: 'meses', tipo: 'mesesMulti', label: 'Meses que comprenden el informe trimestral' },
+        { id: 'meses', tipo: 'mesesMulti', label: 'Meses que comprenden el informe' },
         { id: 'fechaSocializacion', tipo: 'fecha', label: 'Fecha del formato de socialización' },
         { id: 'firma', tipo: 'sino', label: 'Cuenta con la firma del padre, madre o acudiente' }
       ]
@@ -153,7 +154,7 @@ var MODULOS = [
     id: 'paqueteLiberada',
     titulo: 'Entrega de Paquete — Jornada Liberada',
     campos: [
-      { id: 'cuenta', tipo: 'sino', label: 'Cuenta con formato de entrega de paquete Jornada Liberada' }
+      { id: 'cuenta', tipo: 'sino', label: '¿Cuenta con formato de entrega de paquete Jornada Liberada?' }
     ],
     rama: {
       campo: 'cuenta',
@@ -162,7 +163,7 @@ var MODULOS = [
           repetible: {
             id: 'entregas',
             titulo: 'Entrega de paquete — Jornada Liberada',
-            botonTexto: 'Crear nuevo registro de paquete Jornada Liberada',
+            botonTexto: 'Crear registro de paquete Jornada Liberada',
             campos: [
               { id: 'nombreFormato', tipo: 'texto', label: 'Nombre del formato que tiene la entidad' },
               { id: 'enlace', tipo: 'texto', label: 'Hipervínculo o enlace del documento' },
@@ -189,7 +190,7 @@ var MODULOS = [
     id: 'paquetePedagogica',
     titulo: 'Entrega de Paquete — Jornada Pedagógica',
     campos: [
-      { id: 'cuenta', tipo: 'sino', label: 'Cuenta con formato de entrega de paquete Jornada Pedagógica' }
+      { id: 'cuenta', tipo: 'sino', label: '¿Cuenta con formato de entrega de paquete Jornada Pedagógica?' }
     ],
     rama: {
       campo: 'cuenta',
@@ -198,7 +199,7 @@ var MODULOS = [
           repetible: {
             id: 'entregas',
             titulo: 'Entrega de paquete — Jornada Pedagógica',
-            botonTexto: 'Crear nuevo registro de paquete Jornada Pedagógica',
+            botonTexto: 'Crear registro de paquete Jornada Pedagógica',
             campos: [
               { id: 'nombreFormato', tipo: 'texto', label: 'Nombre del formato que tiene la entidad' },
               { id: 'enlace', tipo: 'texto', label: 'Hipervínculo o enlace del documento' },
@@ -224,10 +225,11 @@ var MODULOS = [
   {
     id: 'egreso',
     titulo: 'Egreso',
+    gate: 'cuenta',
     campos: [
+      { id: 'cuenta', tipo: 'sino', label: '¿Cuenta con los soportes de egreso que apliquen?' },
       { id: 'nombreFormato', tipo: 'texto', label: 'Nombre del formato que tiene la entidad' },
       { id: 'enlace', tipo: 'texto', label: 'Hipervínculo o enlace del documento' },
-      { id: 'cuenta', tipo: 'sino', label: 'Cuenta con soportes de egreso que apliquen en la concurrencia' },
       { id: 'soportes', tipo: 'egreso', label: 'Relacione el soporte para la solicitud de egreso' }
     ]
   }
