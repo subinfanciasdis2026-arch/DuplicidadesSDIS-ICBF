@@ -448,19 +448,37 @@
         // Trae lo que ya estaba registrado para este niño (del servidor), para continuar.
         return cargarRespuestasServidor(s.casoId);
       })
-      .then(function (servidor) {
+      .then(function (res) {
+        var servidor = res.respuestas || {};
         var local = leerBorradorSilencioso();
-        // Se prefiere el pre-guardado local si existe (puede tener cambios sin enviar);
-        // si no, se usa lo que ya está registrado en el servidor.
-        if (local && Object.keys(local).length) {
-          estado.respuestas = local;
-          mensaje('mensajesFormulario', 'info', 'Se recuperó su avance', 'Encontramos un pre-guardado en este dispositivo. Puede continuar donde quedó.');
-        } else if (servidor && Object.keys(servidor).length) {
-          estado.respuestas = servidor;
-          mensaje('mensajesFormulario', 'info', 'Se cargó lo ya registrado', 'Se trajo la información que ya estaba guardada para esta niña o niño. Puede revisarla, ajustarla y volver a enviar.');
-        } else {
-          estado.respuestas = {};
+        var hayServidor = servidor && Object.keys(servidor).length > 0;
+        var hayLocal = local && Object.keys(local).length > 0;
+
+        // 1) Se parte de TODO lo ya enviado (lo que está en el Excel).
+        // 2) Encima se superpone, por módulo, el pre-guardado local sin enviar (gana lo no enviado).
+        var combinado = {};
+        if (hayServidor) Object.keys(servidor).forEach(function (k) { combinado[k] = servidor[k]; });
+        if (hayLocal) Object.keys(local).forEach(function (k) { combinado[k] = local[k]; });
+        estado.respuestas = combinado;
+
+        if (res.backendViejo) {
+          // El servidor no reconoce la acción 'cargar': NO se puede traer lo ya enviado.
+          mensaje('mensajesFormulario', 'error', 'El servidor está desactualizado',
+            'No se pudo recuperar del Excel lo que ya se había enviado para esta niña o niño, porque la ' +
+            'aplicación web de Google Apps Script todavía no tiene la función de recuperación. Actualice el ' +
+            'archivo Codigo.gs y vuelva a publicarlo como NUEVA versión (Implementar → Administrar ' +
+            'implementaciones → editar → Versión nueva). Mientras tanto solo se mostrará el pre-guardado local, si lo hay.');
+        } else if (hayServidor && hayLocal) {
+          mensaje('mensajesFormulario', 'info', 'Se cargó la información del niño',
+            'Se trajo lo ya registrado (enviado) y encima su pre-guardado sin enviar. Puede revisar, ajustar o adicionar y volver a enviar.');
+        } else if (hayServidor) {
+          mensaje('mensajesFormulario', 'info', 'Se cargó lo ya registrado',
+            'Se trajo toda la información que ya estaba guardada para esta niña o niño. Puede revisarla, ajustarla o adicionar y volver a enviar.');
+        } else if (hayLocal) {
+          mensaje('mensajesFormulario', 'info', 'Se recuperó su avance',
+            'Encontramos un pre-guardado en este dispositivo (sin enviar). Puede continuar donde quedó.');
         }
+
         pintarFicha();
         pintarModulos();
         actualizarProgreso();
@@ -475,14 +493,17 @@
   function cargarRespuestasServidor(casoId) {
     return apiPost({ accion: 'cargar', token: estado.auth.token, casoId: casoId })
       .then(function (r) {
-        if (r.ok) return r.respuestas || {};
+        if (r.ok) return { respuestas: r.respuestas || {}, backendViejo: false };
         if (r.codigo === 'SESION') { forzarRelogin('Su sesión expiró. Vuelva a ingresar.'); throw new Error('SESION'); }
         if (r.codigo === 'DEBE_CAMBIAR') { mostrarCambio(); throw new Error('DEBE_CAMBIAR'); }
-        return {};   // backend sin la función de precarga, u otro error: se continúa sin precarga
+        // Si el servidor responde "Acción no reconocida", el backend publicado está
+        // desactualizado (no tiene la acción 'cargar'): se marca para avisar al usuario.
+        var viejo = /no reconocida/i.test(r.error || '');
+        return { respuestas: {}, backendViejo: viejo };
       })
       .catch(function (err) {
         if (err.message === 'SESION' || err.message === 'DEBE_CAMBIAR') throw err;
-        return {};   // si falla la consulta, se continúa sin precarga del servidor
+        return { respuestas: {}, backendViejo: false };   // fallo de red: se continúa sin carga del servidor
       });
   }
 
