@@ -471,9 +471,15 @@
   }
 
   // Trae del servidor la última información registrada para este caso (si existe).
+  // El backend devuelve { ok, respuestas } (no { datos }), por eso se usa apiPost directo.
   function cargarRespuestasServidor(casoId) {
-    return apiDatos('cargar', { casoId: casoId })
-      .then(function (d) { return (d && d.respuestas) ? d.respuestas : {}; })
+    return apiPost({ accion: 'cargar', token: estado.auth.token, casoId: casoId })
+      .then(function (r) {
+        if (r.ok) return r.respuestas || {};
+        if (r.codigo === 'SESION') { forzarRelogin('Su sesión expiró. Vuelva a ingresar.'); throw new Error('SESION'); }
+        if (r.codigo === 'DEBE_CAMBIAR') { mostrarCambio(); throw new Error('DEBE_CAMBIAR'); }
+        return {};   // backend sin la función de precarga, u otro error: se continúa sin precarga
+      })
       .catch(function (err) {
         if (err.message === 'SESION' || err.message === 'DEBE_CAMBIAR') throw err;
         return {};   // si falla la consulta, se continúa sin precarga del servidor
