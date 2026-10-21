@@ -77,6 +77,7 @@ var CONFIG = {
   ],
 
   TIPO_CONTACTO: ['Presencial', 'Telefónico'],
+  PARENTESCO_FIRMA: ['Mamá', 'Papá', 'Acudiente'],
   SI_NO: ['SI', 'NO'],
   SI_NO_NA: ['SI', 'NO', 'NO APLICA'],
 
