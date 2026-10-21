@@ -90,7 +90,7 @@ var MODULOS = [
       campos: [
         { id: 'fecha', tipo: 'fecha', label: 'Fecha de la novedad (D/M/A)' },
         { id: 'tipo', tipo: 'multi', label: 'Tipo de novedad', opcionesDe: 'TIPOS_NOVEDAD' },
-        { id: 'informaIcbf', tipo: 'sino', label: '¿Se identifica que la mamá informa al jardín que la niña o el niño está en algún servicio del ICBF?' },
+        { id: 'informaIcbf', tipo: 'sino', label: '¿En la novedad se identifica que el niño o la niña es beneficiario de un servicio del ICBF?' },
         { id: 'contacto', tipo: 'select', label: 'Tipo de contacto', opcionesDe: 'TIPO_CONTACTO', disparaRender: true },
         { id: 'firma', tipo: 'sinona', label: 'Cuenta con la firma del padre, madre o acudiente' },
         { id: 'fechaSocializo', tipo: 'fecha', label: 'Fecha de la novedad en que se socializó' },
