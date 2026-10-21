@@ -1010,6 +1010,9 @@ select.control.cargando { background-color: var(--azul-050); }
 
 textarea.control { resize: vertical; min-height: 44px; }
 
+/* Par pregunta + campo compañero (apilado en móvil). */
+.preg-par { display: grid; gap: 13px; }
+
 /* Subcuadro / registro repetible */
 .cuadro {
   border: 1px solid var(--gris-200);
@@ -1089,6 +1092,9 @@ textarea.control { resize: vertical; min-height: 44px; }
   .ficha__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .cuadro { grid-template-columns: 1fr 1fr; }
   .cuadro__tit, .cuadro > .preg--ancho, .cuadro > .asistencia, .cuadro > .multi { grid-column: 1 / -1; }
+  /* El par (pregunta + compañero al lado) ocupa su propia fila de dos columnas. */
+  .cuadro > .preg-par { grid-column: 1 / -1; grid-template-columns: 1fr 1fr; }
+  .cuadro > .preg-par--solo { grid-template-columns: 1fr; }
 }
 
 /* ============================================================================
