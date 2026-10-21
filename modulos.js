@@ -90,9 +90,15 @@ var MODULOS = [
       campos: [
         { id: 'fecha', tipo: 'fecha', label: 'Fecha de la novedad (D/M/A)' },
         { id: 'tipo', tipo: 'multi', label: 'Tipo de novedad', opcionesDe: 'TIPOS_NOVEDAD' },
-        { id: 'contacto', tipo: 'select', label: 'Tipo de contacto', opcionesDe: 'TIPO_CONTACTO' },
+        { id: 'informaIcbf', tipo: 'sino', label: '¿Se identifica que la mamá informa al jardín que la niña o el niño está en algún servicio del ICBF?' },
+        { id: 'contacto', tipo: 'select', label: 'Tipo de contacto', opcionesDe: 'TIPO_CONTACTO', disparaRender: true },
         { id: 'firma', tipo: 'sinona', label: 'Cuenta con la firma del padre, madre o acudiente' },
-        { id: 'fechaSocializo', tipo: 'fecha', label: 'Fecha de la novedad en que se socializó' }
+        { id: 'fechaSocializo', tipo: 'fecha', label: 'Fecha de la novedad en que se socializó' },
+        { id: 'observaciones', tipo: 'textarea', label: 'Observaciones', max: 300, ayuda: 'Máximo 300 caracteres.' },
+        // Solo cuando el contacto es Presencial (firma presencial): datos de quien firma.
+        { id: 'firmanteNombre', tipo: 'texto', label: 'Nombre de quien firma la novedad', mostrarSi: { campo: 'contacto', igual: 'Presencial' } },
+        { id: 'firmanteDoc', tipo: 'numero', label: 'Número de documento de quien firma', ayuda: 'Solo números.', mostrarSi: { campo: 'contacto', igual: 'Presencial' } },
+        { id: 'firmanteParentesco', tipo: 'select', label: 'Parentesco de quien firma', opcionesDe: 'PARENTESCO_FIRMA', mostrarSi: { campo: 'contacto', igual: 'Presencial' } }
       ]
     }
   },
