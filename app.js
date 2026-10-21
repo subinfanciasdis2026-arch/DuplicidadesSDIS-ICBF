@@ -671,8 +671,21 @@
       rep.campos.forEach(function (campo) {
         // Campos condicionales dentro del registro (ej. firma presencial).
         if (campo.mostrarSi) {
+          var regm = getRep(mod.id, rep.id)[idx] || {};
+          if (txt(regm[campo.mostrarSi.campo]) !== campo.mostrarSi.igual) return;
+        }
+        // Campo "compañero": aparece AL LADO de su pregunta cuando se cumple la condición.
+        if (campo.companero) {
           var reg = getRep(mod.id, rep.id)[idx] || {};
-          if (txt(reg[campo.mostrarSi.campo]) !== campo.mostrarSi.igual) return;
+          var par = crear('div', 'preg-par');
+          par.appendChild(renderCampo(mod, 'rep', campo, rep.id, idx));
+          if (txt(reg[campo.id]) === campo.companero.siControlador) {
+            par.appendChild(renderCampo(mod, 'rep', campo.companero, rep.id, idx));
+          } else {
+            par.classList.add('preg-par--solo');
+          }
+          cuadro.appendChild(par);
+          return;
         }
         cuadro.appendChild(renderCampo(mod, 'rep', campo, rep.id, idx));
       });
@@ -1093,8 +1106,9 @@
   }
 
   /* ========================= DETALLE COMPLETO (hoja "Respuestas") ========= */
-  // Arma un texto con TODAS las respuestas de TODAS las preguntas, con su
-  // etiqueta y diferenciadas por módulo, para la nueva hoja del Excel.
+  // Arma un CATÁLOGO con TODAS las preguntas de TODOS los módulos del aplicativo,
+  // con su respuesta (o "—" si no se respondió), diferenciadas por módulo.
+  // No depende del gate ni de que el módulo tenga datos: siempre salen todas.
   function buscarCampo(campos, id) {
     for (var i = 0; i < (campos || []).length; i++) if (campos[i].id === id) return campos[i];
     return null;
@@ -1105,6 +1119,7 @@
     if (typeof v === 'object') return '';
     return txt(v);
   }
+  // Devuelve la respuesta de un campo base, o "—" si está vacía.
   function detalleCampoBase(L, m, campo, pre) {
     var b = m.base || {};
     if (campo.tipo === 'asistencia') {
@@ -1128,21 +1143,29 @@
       });
       return;
     }
-    var sv2 = valorCampo(campo, b[campo.id]);
-    if (sv2 !== '') L.push(pre + campo.label + ': ' + sv2);
+    L.push(pre + campo.label + ': ' + (valorCampo(campo, b[campo.id]) || '—'));
   }
-  function detalleRepetible(L, m, rep) {
+  // Lista todas las preguntas del repetible: cada registro diligenciado y,
+  // si no hay registros, el listado de preguntas (con "—") para que se vean.
+  function detalleRepetible(L, m, rep, pre) {
     var arr = (m.rep && m.rep[rep.id]) || [];
-    if (!arr.length) { L.push('- ' + rep.titulo + ': (sin registros)'); return; }
-    arr.forEach(function (reg, idx) {
-      L.push('- ' + rep.titulo + ' ' + (idx + 1) + ':');
-      rep.campos.forEach(function (campo) {
-        // Respeta los campos condicionales (ej. firmante solo si contacto = Presencial).
-        if (campo.mostrarSi && txt(reg[campo.mostrarSi.campo]) !== campo.mostrarSi.igual) return;
-        var sv = valorCampo(campo, reg[campo.id]);
-        if (sv !== '') L.push('      · ' + campo.label + ': ' + sv);
+    if (arr.length) {
+      arr.forEach(function (reg, idx) {
+        L.push(pre + rep.titulo + ' ' + (idx + 1) + ':');
+        rep.campos.forEach(function (campo) {
+          L.push('      · ' + campo.label + ': ' + (valorCampo(campo, reg[campo.id]) || '—'));
+          if (campo.companero) {
+            L.push('      · ' + campo.companero.label + ': ' + (valorCampo(campo.companero, reg[campo.companero.id]) || '—'));
+          }
+        });
       });
-    });
+    } else {
+      L.push(pre + rep.titulo + ' (sin registros diligenciados). Preguntas de este registro:');
+      rep.campos.forEach(function (campo) {
+        L.push('      · ' + campo.label + ': —');
+        if (campo.companero) L.push('      · ' + campo.companero.label + ': —');
+      });
+    }
   }
 
   function construirDetalle() {
@@ -1159,28 +1182,23 @@
       L.push((i + 1) + '. ' + mod.titulo + (mod.codigo ? '  (' + mod.codigo + ')' : ''));
       L.push('========================================');
 
-      if (!moduloTieneDatos(mod)) { L.push('(Sin información)'); L.push(''); return; }
-
-      // Gate cerrado (respondió distinto de SÍ)
-      if (mod.gate && (m.base ? m.base[mod.gate] : '') !== 'SI') {
-        var gc = buscarCampo(mod.campos, mod.gate);
-        L.push('- ' + (gc ? gc.label : mod.gate) + ': ' + (valorCampo(gc, m.base ? m.base[mod.gate] : '') || '—'));
-        L.push('(Respondió distinto de SÍ: no se registran más preguntas)');
-        L.push('');
-        return;
-      }
-
+      // Todas las preguntas base del módulo (siempre, aunque el gate esté en NO).
       (mod.campos || []).forEach(function (campo) { detalleCampoBase(L, m, campo, '- '); });
 
+      // Rama: se listan TODOS los casos posibles (catálogo completo de preguntas).
       if (mod.rama) {
-        var val = m.base ? m.base[mod.rama.campo] : '';
-        var caso = mod.rama.casos[val];
-        if (caso) {
-          (caso.campos || []).forEach(function (campo) { detalleCampoBase(L, m, campo, '- '); });
-          if (caso.repetible) detalleRepetible(L, m, caso.repetible);
-        }
+        var campoRama = buscarCampo(mod.campos, mod.rama.campo);
+        var etiquetaRama = campoRama ? campoRama.label : mod.rama.campo;
+        Object.keys(mod.rama.casos).forEach(function (casoKey) {
+          var caso = mod.rama.casos[casoKey];
+          L.push('  » Si "' + etiquetaRama + '" = ' + casoKey + ':');
+          (caso.campos || []).forEach(function (campo) { detalleCampoBase(L, m, campo, '  - '); });
+          if (caso.repetible) detalleRepetible(L, m, caso.repetible, '  - ');
+        });
       }
-      if (mod.repetible) detalleRepetible(L, m, mod.repetible);
+
+      // Repetible directo del módulo.
+      if (mod.repetible) detalleRepetible(L, m, mod.repetible, '- ');
 
       L.push('');
     });
