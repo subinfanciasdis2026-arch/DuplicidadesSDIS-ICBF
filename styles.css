@@ -1006,6 +1006,7 @@ select.control.cargando { background-color: var(--azul-050); }
 .preg__label { font-size: 13px; font-weight: 700; color: var(--azul-800); }
 .preg__label .req { color: var(--rojo); }
 .preg__ayuda { font-size: 11.5px; color: var(--gris-500); }
+.preg__contador { font-size: 11px; color: var(--gris-500); text-align: right; margin-top: 3px; }
 
 textarea.control { resize: vertical; min-height: 44px; }
 
