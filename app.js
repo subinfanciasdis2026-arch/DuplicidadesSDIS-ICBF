@@ -668,7 +668,14 @@
         tit.appendChild(bq);
       }
       cuadro.appendChild(tit);
-      rep.campos.forEach(function (campo) { cuadro.appendChild(renderCampo(mod, 'rep', campo, rep.id, idx)); });
+      rep.campos.forEach(function (campo) {
+        // Campos condicionales dentro del registro (ej. firma presencial).
+        if (campo.mostrarSi) {
+          var reg = getRep(mod.id, rep.id)[idx] || {};
+          if (txt(reg[campo.mostrarSi.campo]) !== campo.mostrarSi.igual) return;
+        }
+        cuadro.appendChild(renderCampo(mod, 'rep', campo, rep.id, idx));
+      });
       wrap.appendChild(cuadro);
     });
     cont.appendChild(wrap);
@@ -714,7 +721,11 @@
       });
     } else if (campo.tipo === 'textarea') {
       control = crear('textarea', 'control'); control.value = txt(valor);
-      control.addEventListener('input', function () { escribirValor(mod, scope, campo, repId, repIndex, control.value); onCambio(false); });
+      if (campo.max) { control.maxLength = campo.max; }
+      control.addEventListener('input', function () {
+        if (campo.max && control.value.length > campo.max) { control.value = control.value.slice(0, campo.max); }
+        escribirValor(mod, scope, campo, repId, repIndex, control.value); onCambio(false);
+      });
     } else if (campo.tipo === 'fecha') {
       control = crear('input', 'control'); control.type = 'date'; control.value = txt(valor);
       limitarFecha(control);
@@ -727,11 +738,21 @@
       control.addEventListener('change', function () {
         escribirValor(mod, scope, campo, repId, repIndex, control.value);
         var estructural = !!((mod.gate && scope === 'base' && campo.id === mod.gate) ||
-                             (mod.rama && scope === 'base' && campo.id === mod.rama.campo));
+                             (mod.rama && scope === 'base' && campo.id === mod.rama.campo) ||
+                             campo.disparaRender);   // re-render para mostrar/ocultar campos condicionales
         onCambio(estructural, mod);
       });
     }
     cont.appendChild(control);
+
+    // Contador de caracteres para textarea con máximo.
+    if (campo.tipo === 'textarea' && campo.max) {
+      var cc = crear('div', 'preg__contador');
+      var upd = function () { cc.textContent = control.value.length + '/' + campo.max; };
+      upd();
+      control.addEventListener('input', upd);
+      cont.appendChild(cc);
+    }
     return cont;
   }
 
@@ -1071,6 +1092,102 @@
     return L.join('\n');
   }
 
+  /* ========================= DETALLE COMPLETO (hoja "Respuestas") ========= */
+  // Arma un texto con TODAS las respuestas de TODAS las preguntas, con su
+  // etiqueta y diferenciadas por módulo, para la nueva hoja del Excel.
+  function buscarCampo(campos, id) {
+    for (var i = 0; i < (campos || []).length; i++) if (campos[i].id === id) return campos[i];
+    return null;
+  }
+  function valorCampo(campo, v) {
+    if (v === null || v === undefined) return '';
+    if (Array.isArray(v)) return v.join(', ');
+    if (typeof v === 'object') return '';
+    return txt(v);
+  }
+  function detalleCampoBase(L, m, campo, pre) {
+    var b = m.base || {};
+    if (campo.tipo === 'asistencia') {
+      var a = b[campo.id] || {}, pares = [], tot = 0;
+      Object.keys(a).forEach(function (k) {
+        if (a[k] !== '' && a[k] !== null && a[k] !== undefined) { pares.push(k + '=' + a[k]); tot += parseInt(a[k], 10) || 0; }
+      });
+      L.push(pre + campo.label + ': ' + (pares.join(', ') || '—') + '  (total: ' + tot + ')');
+      return;
+    }
+    if (campo.tipo === 'egreso') {
+      var sop = b.soportes || [];
+      L.push(pre + campo.label + ': ' + (Array.isArray(sop) && sop.length ? sop.join(', ') : '—'));
+      (Array.isArray(sop) ? sop : []).forEach(function (nombre) {
+        Object.keys(b).forEach(function (k) {
+          if (k.indexOf('egreso_' + nombre + '_') === 0) {
+            var sv = valorCampo(campo, b[k]);
+            if (sv !== '') L.push('      · ' + nombre + ' — ' + k.replace('egreso_' + nombre + '_', '') + ': ' + sv);
+          }
+        });
+      });
+      return;
+    }
+    var sv2 = valorCampo(campo, b[campo.id]);
+    if (sv2 !== '') L.push(pre + campo.label + ': ' + sv2);
+  }
+  function detalleRepetible(L, m, rep) {
+    var arr = (m.rep && m.rep[rep.id]) || [];
+    if (!arr.length) { L.push('- ' + rep.titulo + ': (sin registros)'); return; }
+    arr.forEach(function (reg, idx) {
+      L.push('- ' + rep.titulo + ' ' + (idx + 1) + ':');
+      rep.campos.forEach(function (campo) {
+        // Respeta los campos condicionales (ej. firmante solo si contacto = Presencial).
+        if (campo.mostrarSi && txt(reg[campo.mostrarSi.campo]) !== campo.mostrarSi.igual) return;
+        var sv = valorCampo(campo, reg[campo.id]);
+        if (sv !== '') L.push('      · ' + campo.label + ': ' + sv);
+      });
+    });
+  }
+
+  function construirDetalle() {
+    var c = estado.caso, s = estado.seleccion, L = [];
+    L.push('NIÑA O NIÑO: ' + c.nombre + '  (Doc. ' + c.doc + ')');
+    L.push('Unidad operativa: ' + c.jardin + '  |  Categoría: ' + s.categoria + '  |  Periodo: ' + c.periodo);
+    L.push('Diligenciado por: ' + estado.auth.nombre + ' (' + estado.auth.usuario + ' · ' + estado.auth.rol + ')');
+    L.push('Fecha de diligenciamiento: ' + hoyTexto());
+    L.push('');
+
+    MODULOS.forEach(function (mod, i) {
+      var m = estado.respuestas[mod.id] || { base: {}, rep: {} };
+      L.push('========================================');
+      L.push((i + 1) + '. ' + mod.titulo + (mod.codigo ? '  (' + mod.codigo + ')' : ''));
+      L.push('========================================');
+
+      if (!moduloTieneDatos(mod)) { L.push('(Sin información)'); L.push(''); return; }
+
+      // Gate cerrado (respondió distinto de SÍ)
+      if (mod.gate && (m.base ? m.base[mod.gate] : '') !== 'SI') {
+        var gc = buscarCampo(mod.campos, mod.gate);
+        L.push('- ' + (gc ? gc.label : mod.gate) + ': ' + (valorCampo(gc, m.base ? m.base[mod.gate] : '') || '—'));
+        L.push('(Respondió distinto de SÍ: no se registran más preguntas)');
+        L.push('');
+        return;
+      }
+
+      (mod.campos || []).forEach(function (campo) { detalleCampoBase(L, m, campo, '- '); });
+
+      if (mod.rama) {
+        var val = m.base ? m.base[mod.rama.campo] : '';
+        var caso = mod.rama.casos[val];
+        if (caso) {
+          (caso.campos || []).forEach(function (campo) { detalleCampoBase(L, m, campo, '- '); });
+          if (caso.repetible) detalleRepetible(L, m, caso.repetible);
+        }
+      }
+      if (mod.repetible) detalleRepetible(L, m, mod.repetible);
+
+      L.push('');
+    });
+
+    return L.join('\n');
+  }
+
   /* ====================================================== ENVÍO */
   function confirmarEnvio() {
     var con = 0; MODULOS.forEach(function (m) { if (moduloTieneDatos(m)) con++; });
@@ -1097,6 +1214,7 @@
       habeasDataVersion: hdActivo() ? txt(CONFIG.HABEAS_DATA.VERSION) : '',
       habeasDataFecha: s.fechaAceptacionHD || '',
       resumen: resumen,
+      detalle: construirDetalle(),
       respuestas: estado.respuestas
     };
 
