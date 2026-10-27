@@ -93,7 +93,8 @@ var CONFIG = {
 
   SOPORTES_EGRESO: [
     'Carta', 'Visita domiciliaria', 'Llamadas telefónicas',
-    'Novedad', 'Acta de seguimiento'
+    'Novedad', 'Acta de seguimiento',
+    'TRASLADO A OTRA UNIDAD OPERATIVA, FORMATO ÚNICO DE INVENTARIO DOCUMENTAL – FUID (FOR-GD-017)'
   ],
 
   // Párrafo que debe contener el formato de Formalización de Cupo.
