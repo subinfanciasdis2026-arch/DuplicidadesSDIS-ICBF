@@ -552,10 +552,12 @@
   function setBase(mid, cid, v) { modEstado(mid).base[cid] = v; }
   function getRep(mid, rid) { var m = modEstado(mid); if (!m.rep[rid]) m.rep[rid] = []; return m.rep[rid]; }
 
+  var recalcNovedades = null;   // se define al renderizar el módulo de novedades; valida el cuadre en vivo.
   function onCambio(estructural, mod) {
     guardarBorradorConRetardo();
     if (estructural && mod) { redibujarCuerpo(mod); }
     actualizarProgreso();
+    if (recalcNovedades) recalcNovedades();   // revalida novedades (cantidades vs. cuadro por meses)
   }
 
   /* ====================================================== MÓDULOS */
@@ -713,6 +715,7 @@
   function renderCampo(mod, scope, campo, repId, repIndex) {
     if (campo.tipo === 'asistencia') return renderAsistencia(mod, campo);
     if (campo.tipo === 'egreso') return renderEgreso(mod, campo);
+    if (campo.tipo === 'novResumen') return renderNovResumen(mod, campo);
 
     var cont = crear('div', 'preg' + (campo.ancho ? ' preg--ancho' : ''));
     var lab = crear('label', 'preg__label'); lab.textContent = campo.label; cont.appendChild(lab);
@@ -831,7 +834,7 @@
     tbody.appendChild(trb); tabla.appendChild(tbody); box.appendChild(tabla); cont.appendChild(box);
 
     var total = crear('div', 'asistencia__total');
-    var tl = crear('span'); tl.textContent = 'Total de asistencias:'; total.appendChild(tl);
+    var tl = crear('span'); tl.textContent = campo.totalLabel || 'Total de asistencias:'; total.appendChild(tl);
     var tv = crear('strong'); total.appendChild(tv);
     cont.appendChild(total);
 
@@ -840,6 +843,50 @@
       tv.textContent = s;
     }
     actualizarTotal();
+    return cont;
+  }
+
+  /* --------------------------------------------- novedades: validación de cuadre */
+  function sumaMeses(obj) {
+    var s = 0;
+    if (obj && typeof obj === 'object') {
+      for (var k in obj) { if (Object.prototype.hasOwnProperty.call(obj, k)) s += parseInt(obj[k], 10) || 0; }
+    }
+    return s;
+  }
+
+  // Resumen/alerta del módulo Novedades: la suma mensual debe ser igual a la
+  // "cantidad registrada en el periodo" y a (presencial + telefónica).
+  function renderNovResumen(mod, campo) {
+    var cont = crear('div', 'preg preg--ancho');
+    var alerta = crear('div', 'mensaje oculto'); alerta.id = 'alertaNovedades';
+    cont.appendChild(alerta);
+
+    recalcNovedades = function () {
+      if (!alerta.isConnected) return;   // el módulo ya no está en pantalla
+      var A = parseInt(getBase('novedades', 'totalNovedades'), 10) || 0;  // registradas en el periodo
+      var P = parseInt(getBase('novedades', 'novPresencial'), 10) || 0;
+      var T = parseInt(getBase('novedades', 'novTelefonica'), 10) || 0;
+      var B = P + T;                                                       // presencial + telefónica
+      var C = sumaMeses(getBase('novedades', 'novedadesMeses'));           // suma del cuadro por meses
+
+      var hayDato = !!(txt(getBase('novedades', 'totalNovedades')) ||
+                       txt(getBase('novedades', 'novPresencial')) ||
+                       txt(getBase('novedades', 'novTelefonica')) || C);
+      if (!hayDato) { alerta.className = 'mensaje oculto'; alerta.innerHTML = ''; return; }
+
+      if (A === B && A === C) {
+        alerta.className = 'mensaje mensaje--ok';
+        alerta.innerHTML = '<strong>Las cantidades coinciden ✔</strong>Total de novedades: ' + A + '.';
+      } else {
+        alerta.className = 'mensaje mensaje--alerta';
+        alerta.innerHTML = '<strong>Las cantidades de novedades no coinciden</strong>' +
+          'Registradas en el periodo: <b>' + A + '</b> &nbsp;·&nbsp; ' +
+          'Presencial + Telefónica: <b>' + B + '</b> (' + P + ' + ' + T + ') &nbsp;·&nbsp; ' +
+          'Suma del cuadro por meses: <b>' + C + '</b>. Las tres cantidades deben ser iguales.';
+      }
+    };
+    setTimeout(function () { if (recalcNovedades) recalcNovedades(); }, 0);
     return cont;
   }
 
