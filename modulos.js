@@ -81,29 +81,16 @@ var MODULOS = [
       { id: 'nombreFormato', tipo: 'texto', label: 'Nombre del formato que tiene la entidad' },
       { id: 'enlace', tipo: 'texto', label: 'Hipervínculo o enlace del documento' },
       { id: 'legible', tipo: 'sino', label: '¿El documento es legible?' },
-      { id: 'completitud', tipo: 'sino', label: '¿La digitalización del documento se evidencia en su completitud?' }
-    ],
-    repetible: {
-      id: 'registros',
-      titulo: 'Registro de novedad',
-      botonTexto: 'Crear registro de novedad',
-      campos: [
-        { id: 'fecha', tipo: 'fecha', label: 'Fecha de la novedad (D/M/A)' },
-        { id: 'tipo', tipo: 'multi', label: 'Tipo de novedad', opcionesDe: 'TIPOS_NOVEDAD' },
-        // Si la respuesta es SÍ, aparece "Observaciones" AL LADO de esta pregunta.
-        { id: 'informaIcbf', tipo: 'sino', disparaRender: true,
-          label: '¿En la novedad se identifica que el niño o la niña es beneficiario de un servicio del ICBF?',
-          companero: { id: 'observaciones', tipo: 'textarea', label: 'Observaciones', max: 300, ayuda: 'Máximo 300 caracteres.', siControlador: 'SI' } },
-        // Si el contacto es Telefónico, aparece la fecha de socialización AL LADO de esta pregunta.
-        { id: 'contacto', tipo: 'select', label: 'Tipo de contacto', opcionesDe: 'TIPO_CONTACTO', disparaRender: true,
-          companero: { id: 'fechaSocializo', tipo: 'fecha', label: 'Fecha de la novedad en que se socializó', siControlador: 'Telefónico' } },
-        { id: 'firma', tipo: 'sinona', label: 'Cuenta con la firma del padre, madre o acudiente' },
-        // Solo cuando el contacto es Presencial (firma presencial): datos de quien firma.
-        { id: 'firmanteNombre', tipo: 'texto', label: 'Nombre de quien firma la novedad', mostrarSi: { campo: 'contacto', igual: 'Presencial' } },
-        { id: 'firmanteDoc', tipo: 'numero', label: 'Número de documento de quien firma', ayuda: 'Solo números.', mostrarSi: { campo: 'contacto', igual: 'Presencial' } },
-        { id: 'firmanteParentesco', tipo: 'select', label: 'Parentesco de quien firma', opcionesDe: 'PARENTESCO_FIRMA', mostrarSi: { campo: 'contacto', igual: 'Presencial' } }
-      ]
-    }
+      { id: 'completitud', tipo: 'sino', label: '¿La digitalización del documento se evidencia en su completitud?' },
+      // --- Preguntas nuevas: conteo de novedades ---
+      { id: 'totalNovedades', tipo: 'numero', label: 'Cantidad de novedades registradas en el periodo de evaluación', ayuda: 'Solo números.' },
+      { id: 'novPresencial', tipo: 'numero', label: 'Cantidad de novedades de tipo presencial', ayuda: 'Solo números.' },
+      { id: 'novTelefonica', tipo: 'numero', label: 'Cantidad de novedades de tipo telefónica', ayuda: 'Solo números.' },
+      // Cuadro por meses (solo los del periodo de duplicidad), con contador. Igual que Asistencia.
+      { id: 'novedadesMeses', tipo: 'asistencia', label: 'Novedades registradas por mes', totalLabel: 'Total de novedades:' },
+      // Alerta de cuadre: suma mensual = cantidad del periodo = presencial + telefónica.
+      { id: 'novResumen', tipo: 'novResumen', label: '' }
+    ]
   },
 
   /* -------------------------------------------------------- 5. Observador */
