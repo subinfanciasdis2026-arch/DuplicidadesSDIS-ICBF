@@ -82,7 +82,10 @@ var MODULOS = [
       { id: 'enlace', tipo: 'texto', label: 'Hipervínculo o enlace del documento' },
       { id: 'legible', tipo: 'sino', label: '¿El documento es legible?' },
       { id: 'completitud', tipo: 'sino', label: '¿La digitalización del documento se evidencia en su completitud?' },
-      // --- Preguntas nuevas: conteo de novedades ---
+      // Preguntas que volvemos a incluir:
+      { id: 'informaIcbf', tipo: 'sino', label: '¿El acudiente refiere que el niño o la niña es beneficiario de un servicio del ICBF?' },
+      { id: 'observaciones', tipo: 'textarea', label: 'Observaciones', max: 300, ayuda: 'Máximo 300 caracteres.' },
+      // --- Preguntas de conteo de novedades ---
       { id: 'totalNovedades', tipo: 'numero', label: 'Cantidad de novedades registradas en el periodo de evaluación', ayuda: 'Solo números.' },
       { id: 'novPresencial', tipo: 'numero', label: 'Cantidad de novedades de tipo presencial', ayuda: 'Solo números.' },
       { id: 'novTelefonica', tipo: 'numero', label: 'Cantidad de novedades de tipo telefónica', ayuda: 'Solo números.' },
