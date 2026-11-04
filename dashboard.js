@@ -38,6 +38,17 @@
   function limpiar(el) { while (el && el.firstChild) el.removeChild(el.firstChild); }
   function txt(v) { return v === null || v === undefined ? '' : String(v); }
 
+  // Agrupación "asociado + año": primer token de la categoría + periodo.
+  // Ej: "COFINANCIADO 2025" -> "Cofinanciados 2025"; "CAFAM 5587-2025" -> "Cafam 2025".
+  function grupoConvenio(r) {
+    var cat = txt(r.categoria).trim();
+    var tipo = (cat.split(/\s+/)[0] || '').toUpperCase();
+    var map = { COFINANCIADO: 'Cofinanciados', COMPENSAR: 'Compensar', COLSUBSIDIO: 'Colsubsidio', CAFAM: 'Cafam' };
+    var lbl = map[tipo] || (tipo ? tipo.charAt(0) + tipo.slice(1).toLowerCase() : 'Sin categoría');
+    var anio = txt(r.periodo).trim();
+    return (lbl + (anio ? ' ' + anio : '')).trim();
+  }
+
   function sesion() { try { return JSON.parse(sessionStorage.getItem(CLAVE_SESION) || 'null'); } catch (e) { return null; } }
   function esAdmin() { var s = sesion(); return !!(s && s.token && String(s.rol || '').toLowerCase() === 'administrador'); }
 
@@ -207,7 +218,7 @@
     // --- Filtros principales
     var cardF = crear('div', 'tbl-card'); cardF.appendChild(crear('h3', null, 'Filtros'));
     var grid = crear('div', 'tbl-filtros');
-    grid.appendChild(selectFiltro('tbl-fConvenio', 'Convenio', distintos(regs.map(function (r) { return r.convenio; })), render));
+    grid.appendChild(selectFiltro('tbl-fConvenio', 'Asociado y año', distintos(regs.map(grupoConvenio)), render));
     grid.appendChild(selectFiltro('tbl-fCaja', 'Caja de compensación / operador', distintos(regs.map(function (r) { return r.caja; })), render));
     grid.appendChild(selectFiltro('tbl-fJardin', 'Jardín infantil (unidad operativa)', distintos(regs.map(function (r) { return r.jardin; })), render));
     grid.appendChild(selectFiltro('tbl-fPeriodo', 'Periodo', distintos(regs.map(function (r) { return r.periodo; })), render));
@@ -275,7 +286,7 @@
     var fc = val('#tbl-fConvenio'), fj = val('#tbl-fJardin'), fk = val('#tbl-fCaja'), fp = val('#tbl-fPeriodo');
     var rMod = val('#tbl-rMod'), rPreg = val('#tbl-rPreg'), rVal = val('#tbl-rVal');
     return regs.filter(function (r) {
-      if (fc && txt(r.convenio) !== fc) return false;
+      if (fc && grupoConvenio(r) !== fc) return false;
       if (fj && txt(r.jardin) !== fj) return false;
       if (fk && txt(r.caja) !== fk) return false;
       if (fp && txt(r.periodo) !== fp) return false;
@@ -383,12 +394,11 @@
   /* ----------------------------------------------------- CSV */
   function descargarCSV() {
     var f = filtrar();
-    var cols = ['doc', 'nombre', 'caja', 'convenio', 'jardin', 'periodo'];
-    var head = ['DOCUMENTO', 'NOMBRE', 'CAJA/OPERADOR', 'CONVENIO', 'JARDIN', 'PERIODO'];
+    var head = ['DOCUMENTO', 'NOMBRE', 'ASOCIADO Y AÑO', 'CAJA/OPERADOR', 'CONVENIO', 'JARDIN', 'PERIODO'];
     MODS.forEach(function (m) { head.push(m[1] + ' (cuenta)'); });
     var filas = [head];
     f.forEach(function (r) {
-      var fila = cols.map(function (c) { return txt(r[c]); });
+      var fila = [txt(r.doc), txt(r.nombre), grupoConvenio(r), txt(r.caja), txt(r.convenio), txt(r.jardin), txt(r.periodo)];
       MODS.forEach(function (m) { fila.push(txt(((r.mod || {})[m[0]] || {}).cuenta)); });
       filas.push(fila);
     });
